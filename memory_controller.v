@@ -1,10 +1,10 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
+// Company: CSULB
+// Engineer: Bronson Garel, Andrew Nyugen, Kenneth Vuong, Kyle Wyckoff
 // 
 // Create Date: 02/28/2025 09:48:33 PM
-// Design Name: 
+// Design Name: GA3
 // Module Name: memory_controller
 // Project Name: 
 // Target Devices: 
@@ -23,8 +23,8 @@
 module memory_controller(
     input wire clk_mem,
     input wire reset,
-    input wire read_enable,
-    input wire write_enable,
+    input wire r_en,
+    input wire w_en,
     input wire [7:0] write_data,
     input wire [7:0] read_address,
     output wire [7:0] read_data,
