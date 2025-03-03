@@ -37,7 +37,7 @@ module memory_controller(
        .clk(clk_mem),
        .reset(reset),
        .data(write_data),
-       .readWrite(write_enable),
+       .readWrite(w_en),
        .addr(read_address),
        .out(bram_read_data)
         );
@@ -47,9 +47,9 @@ module memory_controller(
         .clk_mem(clk_mem),
         .reset(reset),
         .data_in(write_data),
-        .w_en(write_enable),
+        .w_en(w_en),
         .full(full),
-        .r_en(read_enable),
+        .r_en(r_en),
         .data_out(fifo_data_out),
         .empty(empty)
         );
