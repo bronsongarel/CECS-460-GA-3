@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: Bronson Garel
+// Company: CSULB
+// Engineer: Bronson Garel, Andrew Nyugen, Kenneth Vuong, Kyle Wyckoff
 // 
 // Create Date: 02/27/2025 06:00:49 PM
 // Design Name: 
@@ -77,7 +77,7 @@ module asynch_fifo #(parameter DATA_WIDTH=8,parameter FIFO_DEPTH=16)(
     end
     
     // Synch pointers between clock domains
-    always @(posedge clk_master) begin
+    always @(posedge clk_mem) begin
         wr_ptr_gray_mem <= wr_ptr_gray_master;
     end
     
@@ -89,4 +89,14 @@ module asynch_fifo #(parameter DATA_WIDTH=8,parameter FIFO_DEPTH=16)(
     assign full     = (wr_ptr_gray_master == {~rd_ptr_gray_mem[4:0], rd_ptr_gray_mem[4]});
     assign empty    = (rd_ptr_gray_master == wr_ptr_gray_mem);
     assign data_out = fifo_mem[rd_ptr_mem];
+    
+    always @(posedge clk_master or posedge reset) begin
+        if (reset) begin
+            fifo_full <= 0;
+            fifo_empty <= 1;
+        end else begin
+            fifo_full <= (wr_ptr_gray_master == {~rd_ptr_gray_mem[4:0], rd_ptr_gray_mem[4]});
+            fifo_empty <= (rd_ptr_gray_master == wr_ptr_gray_mem);
+        end
+    end
 endmodule
