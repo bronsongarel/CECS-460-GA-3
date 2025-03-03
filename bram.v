@@ -44,7 +44,7 @@ module bram(
     always @(posedge clk or posedge reset) begin
         if (reset) begin
             for (i = 0; i < 256; i = i + 1) begin
-                bram[i] = 255 - i;
+                bram[i] <= 255 - i;
             end
             out <= 0;
         end
@@ -52,7 +52,7 @@ module bram(
             out <= bram[addr];
         end
         else if (readWrite) begin //write = 1
-            out <= 0;
+            out <= 8'b0;
             bram[addr] <= data;
         end
     end
