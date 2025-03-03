@@ -58,6 +58,7 @@ module top(
         .read_data(read_data),
         .w_en(w_en_mem),
         .r_en(r_en_mem_internal),
+        .read_address(read_address_mem),
         .empty(empty)
     );
 
