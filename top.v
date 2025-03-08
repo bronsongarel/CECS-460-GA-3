@@ -1,9 +1,9 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
-// Engineer: Bronson Garel, Andrew Nyugen, Kenneth Vuong, Kyle Wyckoff
+// Engineer: 
 // 
-// Create Date: 03/01/2025 09:20:38 PM
+// Create Date: 03/08/2025 10:00:35 AM
 // Design Name: 
 // Module Name: top
 // Project Name: 
@@ -21,74 +21,89 @@
 
 
 module top(
-    input wire clk_master,
-    input wire clk_mem,
-    input wire reset,
-    input wire [7:0] write_data,
-    output wire [7:0] read_data,
-    output wire full,
-    output wire empty
+    input clk_master,
+    input clk_mem,
+    input reset
     );
     
-    // FIFO Signals
-    wire [7:0] fifo_data_out;
-    wire w_en_master;
-    wire r_en_mem;
-    
-    // Memory Controller Signals
-    wire [7:0] write_data_mem;
-    wire [7:0] read_address_mem;
-    wire w_en_mem;
-    wire r_en_mem_internal;
-    
-    master master1(
-        .clk_master(clk_master),
+    // Wires to connect the modules
+    reg wr_en_master;          // Write enable from Master Module
+    wire [7:0] data_in;         // Data input from Master Module to FIFO
+    reg rd_en_master;          // Read enable from Master Module to FIFO
+    wire [7:0] data_out_master; // Data output from FIFO to Master Module
+
+    reg wr_en_mem;             // Write enable from Memory Controller to FIFO
+    wire [7:0] data_in_mem;     // Data input from Memory Controller to FIFO
+    reg rd_en_mem;             // Read enable from Memory Controller from FIFO
+    wire [7:0] data_out_mem;    // Data output from FIFO to Memory Controller
+
+    wire fifo_full;             // FIFO full flag
+    wire fifo_empty;            // FIFO empty flag
+
+    // Instantiating the FIFO module
+    fifo fifo_inst (
+        .clk_master(clk_master), 
+        .clk_mem(clk_mem), 
         .reset(reset),
-        .write_data(write_data),
-        .read_data(fifo_data_out),
-        .w_en(w_en_master),
-        .r_en(r_en_mem),
-        .full(full)
-        ); 
-    
-    memory_controller memory_inst (
-        .clk_mem(clk_mem),
-        .reset(reset),
-        .write_data(write_data_mem),
-        .read_data(read_data),
-        .w_en(w_en_mem),
-        .r_en(r_en_mem_internal),
-        .read_address(read_address_mem),
-        .empty(empty)
+        .wr_en_master(wr_en_master), 
+        .data_in(data_in), 
+        .rd_en_mem(rd_en_mem),
+        .data_out(data_out_mem), 
+        .fifo_full(fifo_full), 
+        .fifo_empty(fifo_empty)
     );
 
-    // Instantiate the FIFO
-    asynch_fifo fifo_inst (
-        .clk_master(clk_master),
-        .clk_mem(clk_mem),
-        .reset(reset),
-        .data_in(write_data),
-        .w_en(w_en_master),
-        .full(full),
-        .r_en(r_en_mem_internal),
-        .data_out(fifo_data_out),
-        .empty(empty)
+    // Instantiating the Master Module
+    master master_inst (
+        .clk_master(clk_master), 
+        .reset(reset), 
+        .wr_en_master(wr_en_master), 
+        .data_in(data_in), 
+        .rd_en_master(rd_en_master), 
+        .data_out(data_out_master)
     );
 
-    // Instantiate BRAM
-    bram bram_inst (
-        .clk(clk_mem),
-        .reset(reset),
-        .addr(read_address_mem),
-        .data(write_data_mem),
-        .readWrite(w_en_mem),
-        .out(read_data)
+    // Instantiating the Memory Controller
+    mem_control mem_inst (
+        .clk_mem(clk_mem), 
+        .reset(reset), 
+        .wr_en_mem(wr_en_mem), 
+        .data_in(data_in_mem), 
+        .rd_en_mem(rd_en_mem), 
+        .data_out(data_out_mem)
     );
 
-    // Data Flow
-    assign write_data_mem = fifo_data_out;   // Data from FIFO is written to BRAM
-    assign read_address_mem = fifo_data_out; // Address read from FIFO data
-    assign w_en_mem = w_en_master;  // Same write enable logic for BRAM
-    assign r_en_mem_internal = r_en_mem;  // Control the read from FIFO
+    // Logic to control read/write enables based on FIFO flags
+    always @(posedge clk_master or posedge reset) begin
+        if (reset) begin
+            // Reset logic for controlling signals
+            wr_en_master <= 0;
+            rd_en_master <= 0;
+        end else begin
+            // Master-to-FIFO logic
+            if (!fifo_full) begin
+                wr_en_master <= 1;  // Enable write to FIFO if not full
+            end
+            if (!fifo_empty) begin
+                rd_en_master <= 1;  // Enable read from FIFO if not empty
+            end
+        end
+    end
+
+    always @(posedge clk_mem or posedge reset) begin
+        if (reset) begin
+            // Reset logic for controlling signals
+            wr_en_mem <= 0;
+            rd_en_mem <= 0;
+        end else begin
+            // FIFO-to-Memory logic
+            if (!fifo_empty) begin
+                rd_en_mem <= 1;  // Enable read from FIFO to Memory
+            end
+            if (!fifo_full) begin
+                wr_en_mem <= 1;  // Enable write from Memory to FIFO
+            end
+        end
+    end
+    
 endmodule
-
