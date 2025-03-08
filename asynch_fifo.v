@@ -1,11 +1,11 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: CSULB
-// Engineer: Bronson Garel, Andrew Nyugen, Kenneth Vuong, Kyle Wyckoff
+// Company: 
+// Engineer: 
 // 
-// Create Date: 02/27/2025 06:00:49 PM
+// Create Date: 03/08/2025 09:55:56 AM
 // Design Name: 
-// Module Name: asynch_fifo
+// Module Name: fifo
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,83 +20,56 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module asynch_fifo #(parameter DATA_WIDTH=8,parameter FIFO_DEPTH=16)(
-    input wire clk_master,  // 90 MHz Clock
-    input wire clk_mem,     // 65 MHz Clock
-    input wire reset,       // Active-high reset
-    input wire [DATA_WIDTH-1:0] data_in,    // Data input from master
-    input wire w_en,        // Write enable from master
-    output wire full,       // FIFO Full Flag
-    input wire r_en,        // Read enable from memory controller
-    output wire [DATA_WIDTH-1:0] data_out,  // Data output to memory controller
-    output wire empty       // FIFO Empty Flag
+module fifo(
+    input wire clk_master,
+    input wire clk_mem,
+    input wire reset,
+    input wire wr_en_master,
+    input wire [7:0] data_in,
+    input wire rd_en_mem,
+    output wire [7:0] data_out,
+    output wire full,
+    output wire empty
     );
     
-    // FIFO Memory Array
-    reg [DATA_WIDTH-1:0] fifo_mem [0:FIFO_DEPTH-1];
+    // FIFO Depth and Size (Assuming 16-depth FIFO, can be adjusted)
+    localparam FIFO_DEPTH = 16;
+    reg [7:0] fifo_mem [FIFO_DEPTH-1:0];  // FIFO memory (8-bit wide)
+    reg [3:0] wr_ptr_master, rd_ptr_mem;   // Write and read pointers
+    reg [3:0] wr_ptr_sync, rd_ptr_sync;   // Synchronized pointers (Gray-coded)
+    wire [3:0] wr_ptr_master_gray, rd_ptr_mem_gray;
+    reg [3:0] rd_ptr_sync_d1;             // Delayed read pointer for synchronization
+    reg full_flag, empty_flag;
 
-    // Write and read pointers 
-    reg [4:0] wr_ptr_master, rd_ptr_mem;  // 5-bit pointers for a FIFO depth of 16
-    reg [4:0] wr_ptr_mem, rd_ptr_master;
-    
-    // Gray code synchronization
-    reg [4:0] wr_ptr_gray_master, rd_ptr_gray_mem;
-    reg [4:0] wr_ptr_gray_mem, rd_ptr_gray_master;
-    
-    // FIFO status flags
-    reg fifo_full, fifo_empty;
-    
-    // Gray code conversion
-    function [4:0] to_gray(input [4:0] bin);
-        to_gray = bin ^ (bin >> 1);
-    endfunction
-    
-    // FIFO Write Logic
+    // Synchronizing write pointer using Gray code
     always @(posedge clk_master or posedge reset) begin
         if (reset) begin
-            wr_ptr_master <= 0;
-            wr_ptr_gray_master <=0;
-            fifo_full <= 0;
-        end else if (w_en && !fifo_full) begin
-            fifo_mem[wr_ptr_master] <= data_in;
+            wr_ptr_master <= 4'b0;
+        end else if (wr_en_master && !fifo_full) begin
             wr_ptr_master <= wr_ptr_master + 1;
-            wr_ptr_gray_master <= to_gray(wr_ptr_master);
         end
     end
-    
-    // FIFO Read Logic
-    always @ (posedge clk_mem or posedge reset) begin
+
+    // Synchronizing read pointer using Gray code
+    always @(posedge clk_mem or posedge reset) begin
         if (reset) begin
-            rd_ptr_mem <= 0;
-            rd_ptr_gray_mem <= 0;
-            fifo_empty <= 0;
-        end else if (r_en && !fifo_empty) begin
+            rd_ptr_mem <= 4'b0;
+        end else if (rd_en_mem && !fifo_empty) begin
             rd_ptr_mem <= rd_ptr_mem + 1;
-            rd_ptr_gray_mem <= to_gray(rd_ptr_mem);
         end
     end
-    
-    // Synch pointers between clock domains
-    always @(posedge clk_mem) begin
-        wr_ptr_gray_mem <= wr_ptr_gray_master;
-    end
-    
+
+    // Full/Empty Logic
+    assign fifo_full = (wr_ptr_master == rd_ptr_sync_d1 && wr_ptr_master != rd_ptr_mem);
+    assign fifo_empty = (rd_ptr_mem == wr_ptr_master_sync);
+
+    // FIFO Data Storage (Write/Read Data)
     always @(posedge clk_master) begin
-        rd_ptr_gray_master <= rd_ptr_gray_mem;
-    end
-    
-    // FIFO full and empty detection
-    assign full     = (wr_ptr_gray_master == {~rd_ptr_gray_mem[4:0], rd_ptr_gray_mem[4]});
-    assign empty    = (rd_ptr_gray_master == wr_ptr_gray_mem);
-    assign data_out = fifo_mem[rd_ptr_mem];
-    
-    always @(posedge clk_master or posedge reset) begin
-        if (reset) begin
-            fifo_full <= 0;
-            fifo_empty <= 1;
-        end else begin
-            fifo_full <= (wr_ptr_gray_master == {~rd_ptr_gray_mem[4:0], rd_ptr_gray_mem[4]});
-            fifo_empty <= (rd_ptr_gray_master == wr_ptr_gray_mem);
+        if (wr_en_master && !fifo_full) begin
+            fifo_mem[wr_ptr_master] <= data_in;
         end
     end
+
+    assign data_out = (rd_en_mem && !fifo_empty) ? fifo_mem[rd_ptr_mem] : 8'bz;
+
 endmodule
