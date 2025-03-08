@@ -1,11 +1,11 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
-// Engineer: Andrew Nguyen
+// Engineer: 
 // 
-// Create Date: 02/28/2025 06:31:45 PM
+// Create Date: 03/08/2025 10:01:48 AM
 // Design Name: 
-// Module Name: Top_tb
+// Module Name: top_tb
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -16,89 +16,74 @@
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// Clock Period = 1/Frequency
+// 
 //////////////////////////////////////////////////////////////////////////////////
-module tb_top;
 
-    // Clock and reset signals
-    reg clk_master;  // 90 MHz clock for Master Module
-    reg clk_mem;     // 65 MHz clock for Memory Controller
-    reg reset;       // Active-high reset
 
-    // Master Module signals
-    reg [7:0] write_data;  // Data to be written by Master
-    wire [7:0] read_data;  // Data read by Master
-    wire w_en;             // Write enable from Master
-    wire r_en;             // Read enable from Master
-    wire full;             // FIFO full flag
-    wire empty;            // FIFO empty flag
+module top_tb();
+    // Declare testbench signals
+    reg clk_master;           // 90 MHz clock for the Master Module
+    reg clk_mem;              // 65 MHz clock for the Memory Controller
+    reg reset;                // Reset signal
 
-    // Memory Controller signals
-    wire [7:0] read_address;  // Address for BRAM read
-    wire [7:0] read_data_mem; // Data read from BRAM
+    // Wires for connecting to the top module
+    wire wr_en_master;        // Write enable from Master Module
+    wire [7:0] data_in;       // Data to FIFO from Master Module
+    wire rd_en_master;        // Read enable to FIFO from Master Module
+    wire [7:0] data_out_master; // Data from FIFO to Master Module
 
-    // Instantiate the Master Module
-    master master_inst (
+    wire wr_en_mem;           // Write enable from Memory Controller to FIFO
+    wire [7:0] data_in_mem;   // Data to FIFO from Memory Controller
+    wire rd_en_mem;           // Read enable to FIFO from Memory Controller
+    wire [7:0] data_out_mem;  // Data from FIFO to Memory Controller
+
+    wire fifo_full;           // FIFO full flag
+    wire fifo_empty;          // FIFO empty flag
+
+    // Instantiate the top module
+    top uut (
         .clk_master(clk_master),
-        .reset(reset),
-        .write_data(write_data),
-        .read_data(read_data),
-        .w_en(w_en),
-        .r_en(r_en),
-        .full(full)
-    );
-
-    // Instantiate the Memory Controller
-    memory_controller mem_ctrl_inst (
         .clk_mem(clk_mem),
-        .reset(reset),
-        .read_enable(r_en),
-        .write_enable(w_en),
-        .write_data(write_data),
-        .read_address(read_address),
-        .read_data(read_data_mem),
-        .empty(empty)
+        .reset(reset)
     );
 
-    // Clock generation for 90 MHz (Master Module)
-    initial begin
-        clk_master = 0;
-        forever #5.555 clk_master = ~clk_master; // 90 MHz clock (11.11 ns period)
+    // Clock generation (90 MHz for Master, 65 MHz for Memory Controller)
+    always begin
+        clk_master = 1'b0;
+        #5 clk_master = 1'b1; // 90 MHz clock (5 ns period)
     end
 
-    // Clock generation for 65 MHz (Memory Controller)
-    initial begin
-        clk_mem = 0;
-        forever #7.692 clk_mem = ~clk_mem; // 65 MHz clock (15.384 ns period)
+    always begin
+        clk_mem = 1'b0;
+        #7.692 clk_mem = 1'b1; // 65 MHz clock (~7.692 ns period)
     end
 
-    // Reset generation
+    // Initial block for stimulus
     initial begin
-        reset = 1; // Assert reset
-        #20;       // Hold reset for 20 ns
-        reset = 0; // De-assert reset
-    end
+        // Initialize signals
+        reset = 1'b1;   // Apply reset
+        #20;            // Wait for a while to ensure reset propagation
+        reset = 1'b0;   // Deassert reset
 
-    // Stimulus for Master Module
-    initial begin
-        write_data = 8'h00; // Initialize write data
-        #30; // Wait for reset to de-assert
+        // Apply stimulus for writing data into FIFO
+        #10;
+        // Simulate Master Module writes to FIFO
+        #10;
+        // Simulate reading from FIFO by Memory Controller
+        #20;
+        // Simulate Memory Controller writes back data to FIFO
+        #30;
+        // Master reads data from FIFO
+        #20;
 
-        // Write data to FIFO
-        for (integer i = 0; i < 16; i = i + 1) begin
-            write_data = i; // Write data incrementing from 0 to 15
-            #11.11; // Wait for one clock cycle of 90 MHz
-        end
-
-        // Read data from FIFO
-        #100; // Wait for Memory Controller to process data
-        for (integer i = 0; i < 16; i = i + 1) begin
-            #15.384; // Wait for one clock cycle of 65 MHz
-        end
-
-        // End simulation
+        // Finish simulation after sufficient time
         #100;
-        $finish;
+        $stop;
     end
 
+    // Monitoring for simulation outputs
+    initial begin
+        $monitor("At time %t, wr_en_master = %b, data_in = %h, rd_en_master = %b, data_out_master = %h, wr_en_mem = %b, data_in_mem = %h, rd_en_mem = %b, data_out_mem = %h, fifo_full = %b, fifo_empty = %b",
+                $time, wr_en_master, data_in, rd_en_master, data_out_master, wr_en_mem, data_in_mem, rd_en_mem, data_out_mem, fifo_full, fifo_empty);
+    end
 endmodule
