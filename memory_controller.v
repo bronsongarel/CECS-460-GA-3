@@ -1,11 +1,11 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: CSULB
-// Engineer: Bronson Garel, Andrew Nyugen, Kenneth Vuong, Kyle Wyckoff
+// Company: 
+// Engineer: 
 // 
-// Create Date: 02/28/2025 09:48:33 PM
-// Design Name: GA3
-// Module Name: memory_controller
+// Create Date: 03/08/2025 09:55:56 AM
+// Design Name: 
+// Module Name: mem_control
 // Project Name: 
 // Target Devices: 
 // Tool Versions: 
@@ -20,40 +20,35 @@
 //////////////////////////////////////////////////////////////////////////////////
 
 
-module memory_controller(
+module mem_control(
     input wire clk_mem,
     input wire reset,
-    input wire r_en,
-    input wire w_en,
-    input wire [7:0] write_data,
-    input wire [7:0] read_address,
-    output wire [7:0] read_data,
-    output wire empty
+    input wire rd_en_mem,
+    input wire [7:0] data_in,
+    output wire [7:0] data_out,
+    output wire wr_en_mem
     );
     
-    wire [7:0] bram_read_data;
-    
-    bram bram1(
-       .clk(clk_mem),
-       .reset(reset),
-       .data(write_data),
-       .readWrite(w_en),
-       .addr(read_address),
-       .out(bram_read_data)
-        );
-    
-    asynch_fifo fifo1(
-        .clk_master(clk_master),
-        .clk_mem(clk_mem),
-        .reset(reset),
-        .data_in(write_data),
-        .w_en(w_en),
-        .full(full),
-        .r_en(r_en),
-        .data_out(fifo_data_out),
-        .empty(empty)
-        );
-        
-    assign read_data = bram_read_data;
+    // BRAM Interface Simulation
+    reg [7:0] bram [255:0];       // 8-bit BRAM (preloaded with data pattern)
+    reg [7:0] data_out_reg;
+
+    always @(posedge clk_mem or posedge reset) begin
+        if (reset) begin
+            data_out_reg <= 8'b0;
+        end else if (rd_en_mem) begin
+            // Read data from BRAM
+            data_out_reg <= bram[rd_en_mem]; 
+        end
+    end
+
+    assign data_out = data_out_reg;
+
+    always @(posedge clk_mem) begin
+        // Simulating writing read data back to FIFO
+        if (wr_en_mem) begin
+            // Data writing logic
+        end
+    end
     
 endmodule
