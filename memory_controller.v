@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Company: CSULB
-// Engineer: Bronson Garel, Andrew Nyugen, Kenneth Vuong, Kyle Wyckoff
+// Engineer: Bronson Garel, Andrew Nguyen, Kenneth Vuong, Kyle Wyckoff
 // 
 // Create Date: 02/28/2025 09:48:33 PM
 // Design Name: GA3
