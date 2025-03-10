@@ -1,0 +1,86 @@
+`timescale 1ns / 1ps
+
+module top_tb();
+
+    // Clock and Reset signals
+    reg clk_master;
+    reg clk_mem;
+    reg reset;
+    
+    // Inputs to top module
+    reg [7:0] write_data;
+    reg w_en;
+    reg r_en;
+    
+    // Outputs from top module
+    wire [7:0] read_data;
+    wire full;
+    wire empty;
+
+    // Clock generation
+    always #5 clk_master = ~clk_master; // 90 MHz clock (10 ns period)
+    always #7 clk_mem = ~clk_mem;       // 65 MHz clock (~14.28 ns period)
+
+    // Instantiate the top module
+    top uut (
+        .clk_master(clk_master),
+        .clk_mem(clk_mem),
+        .reset(reset),
+        .write_data(write_data),
+        .read_data(read_data),
+        .full(full),
+        .empty(empty)
+    );
+
+    // Test Case: FIFO Full and Empty Conditions
+    initial begin
+        // Initialize signals
+        clk_master = 0;
+        clk_mem = 0;
+        reset = 1;
+        write_data = 8'h00;
+        w_en = 0;
+        r_en = 0;
+    
+        // Apply reset for a few clock cycles
+        #20 reset = 0;
+
+        // Phase 1: Fill the FIFO
+        repeat (16) begin // Fill the FIFO (depth = 16)
+            @(posedge clk_master);
+            w_en = 1; // Enable write
+            write_data = $random; // Write random data to FIFO
+        end
+        w_en = 0; // Disable write
+
+        // Phase 2: Check FIFO full condition
+        @(posedge clk_master);
+        if (full) begin
+            // FIFO is full
+            write_data = 8'hFF;
+        end else begin
+            // FIFO is not full
+            write_data = 8'h0F;
+        end
+
+        // Phase 3: Empty the FIFO
+        repeat (16) begin // Empty the FIFO (depth = 16)
+            @(posedge clk_mem);
+            r_en = 1; // Enable read
+        end
+        r_en = 0; // Disable read
+
+        // Phase 4: Check FIFO empty condition
+        @(posedge clk_mem);
+        if (empty) begin
+            // FIFO is empty.
+            write_data = 8'hEE;
+        end else begin
+            // FIFO is not empty
+            write_data = 8'h0E;
+        end
+
+        // End simulation
+        #200 $finish;
+    end
+endmodule
