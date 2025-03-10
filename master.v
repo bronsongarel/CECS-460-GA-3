@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Company: CSULB
-// Engineer: Bronson Garel, Andrew Nyugen, Kenneth Vuong, Kyle Wyckoff
+// Engineer: Bronson Garel, Andrew Nguyen, Kenneth Vuong, Kyle Wyckoff
 // 
 // Create Date: 02/27/2025 06:31:45 PM
 // Design Name: 
