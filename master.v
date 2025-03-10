@@ -50,15 +50,15 @@ module master(
     assign read_enable = 1;
     
     // FIFO
-    asynch_fifo fifo1(
-        .clk_master(clk_master),
-        .clk_mem(clk_mem),
-        .reset(reset),
-        .data_in(write_data_reg),
-        .w_en(w_en), 
-        .full(full),
-        .r_en(r_en),
-        .data_out(fifo_data_out),  
-        .empty(empty)   
-        );
+    // asynch_fifo fifo1(
+    //     .clk_master(clk_master),
+    //     .clk_mem(clk_mem),
+    //     .reset(reset),
+    //     .data_in(write_data_reg),
+    //     .w_en(w_en), 
+    //     .full(full),
+    //     .r_en(r_en),
+    //     .data_out(fifo_data_out),  
+    //     .empty(empty)   
+    //     );
 endmodule
