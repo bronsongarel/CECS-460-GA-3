@@ -1,0 +1,36 @@
+// Test Case 2: Reading from the FIFO
+initial begin
+    // Initialize signals
+    clk_master = 0;
+    clk_mem = 0;
+    reset = 1;
+    write_data = 8'hAA; // Start with some test data
+
+    // Reset for a few clock cycles
+    #10 reset = 0;
+
+    // Phase 1: Fill the FIFO
+    repeat (32) begin // Fill the FIFO
+        #10 write_data = write_data + 1; // Increment write data
+    end
+
+    // Phase 2: Wait for FIFO to process data
+    #100; 
+
+    // Phase 3: Read data from the FIFO
+    repeat (32) begin // Empty the FIFO
+        #15; // Wait for read operation
+    end
+
+    // Phase 4: Check FIFO empty condition
+    if (empty) begin
+        write_data = 8'hEE; 
+        #10 write_data = 8'h00; // Reset write_data
+    end else begin
+        write_data = 8'hFF; // 
+        #10 write_data = 8'h00; // Reset write_data
+    end
+
+    // End simulation
+    #200 $finish;
+end
